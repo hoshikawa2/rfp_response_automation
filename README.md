@@ -207,6 +207,8 @@ This represents a **strategic shift** from concept-based LLM answers to **compli
         - `REQUIREMENT -[HAS_VALUE]-> 1 hour`
     - Stored in Oracle Property Graph tables
 
+![img_1.png](img_1.png)
+
 5. **RFP Requirement Parsing**
     - Each user question is converted into a structured requirement:
       ```json
