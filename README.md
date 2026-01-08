@@ -1,0 +1,325 @@
+
+# 🧠 Oracle GraphRAG for RFP Validation
+
+**GraphRAG-based AI system for factual RFP requirement validation using Oracle 23ai, OCI Generative AI, and Vector Search**
+
+---
+
+## 📌 Overview
+
+This project implements an **AI-driven RFP validation engine** designed to answer *formal RFP requirements* using **explicit, verifiable evidence** extracted from technical documentation.
+
+Instead of responding to open-ended conceptual questions, the system evaluates **whether a requirement is met**, returning **YES / NO / PARTIAL**, along with **exact textual evidence** and full traceability.
+
+The solution combines:
+
+- Retrieval-Augmented Generation (RAG) over PDFs
+- GraphRAG for structured factual relationships
+- Oracle 23ai Property Graph + Oracle Text
+- OCI Generative AI (LLMs & Embeddings)
+- FAISS vector search
+- Flask REST API
+
+This project is based on the article: [Analyze PDF Documents in Natural Language with OCI Generative AI](https://docs.oracle.com/en/learn/oci-genai-pdf)
+
+See the details about this material to setup/configure your development environment, Oracle Autonomous Database AI and other components.
+
+
+---
+
+## 🎯 Why RFP-Centric (and not Concept Q&A)
+
+While typical knowledge base projects focus on extracting information about concepts, step-by-step instructions, and numerous answers to questions asked about a particular subject, an RFP requires a very special approach.
+
+>**Note:** Traditional RAG systems are optimized for *conceptual explanations*. RFPs require **objective validation**, not interpretation.
+
+This project shifts the AI role from:
+
+❌ *“Explain how the product works”*  
+to  
+✅ *“Prove whether this requirement is met, partially met, or not met”*
+
+---
+
+## 🧩 Core Capabilities
+
+### ✅ RFP Requirement Parsing
+
+Each question is parsed into a structured requirement:
+
+```json
+{
+  "requirement_type": "COMPLIANCE | FUNCTIONAL | NON_FUNCTIONAL",
+  "subject": "authentication",
+  "expected_value": "MFA",
+  "decision_type": "YES_NO | YES_NO_PARTIAL",
+  "keywords": ["authentication", "mfa", "identity"]
+}
+```
+
+---
+
+### 🧠 Knowledge Graph (GraphRAG)
+
+Facts are extracted **only when explicitly stated** in documentation and stored as graph triples:
+
+```
+REQUIREMENT -[HAS_METRIC]-> messages per hour
+REQUIREMENT -[HAS_VALUE]-> < 1 hour
+REQUIREMENT -[SUPPORTED_BY]-> Document section
+```
+
+This ensures:
+- No hallucination
+- No inferred assumptions
+- Full auditability
+
+---
+
+### 🔎 Hybrid Retrieval Strategy
+
+1. **Vector Search (FAISS)**
+2. **Oracle Graph + Oracle Text**
+3. **Graph-aware Re-ranking**
+
+---
+
+### 📊 Deterministic RFP Decision Output
+
+```json
+{
+  "answer": "YES | NO | PARTIAL",
+  "justification": "Short factual explanation",
+  "evidence": [
+    {
+      "quote": "Exact text from the document",
+      "source": "Document or section"
+    }
+  ]
+}
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+PDFs
+ └─► Semantic Chunking
+     └─► FAISS Vector Index
+         └─► RAG Retrieval
+             └─► GraphRAG (Oracle 23ai)
+                 └─► Evidence-based LLM Decision
+                     └─► REST API Response
+```
+
+---
+
+## 🚀 REST API
+
+### Health Check
+GET /health
+
+### RFP Validation
+POST /chat
+
+```json
+{
+  "question": "Does the platform support MFA and integration with corporate identity providers?"
+}
+```
+
+---
+
+## 🧪 Example Use Cases
+
+- Enterprise RFP / RFQ validation
+- Pre-sales technical due diligence
+- Compliance checks
+- SaaS capability assessment
+- Audit-ready AI answers
+
+---
+
+## 🛠️ Technology Stack
+
+- Oracle Autonomous Database 23ai
+- OCI Generative AI
+- LangChain / LangGraph
+- FAISS
+- Flask
+- Python
+
+---
+
+## 🔐 Design Principles
+
+- Evidence-first
+- Deterministic outputs
+- No hallucination tolerance
+- Explainability
+
+---
+
+# GraphRAG for RFP Validation – Code Walkthrough
+
+> **Status:** Demo / Reference Implementation  
+> **Derived from:** Official Oracle Generative AI & GraphRAG learning material  
+> https://docs.oracle.com/en/learn/oci-genai-pdf
+
+---
+
+## 🎯 Purpose of This Code
+
+This code implements a **GraphRAG-based pipeline focused on RFP (Request for Proposal) validation**, not generic Q&A.
+
+>**Download** the code [graphrag_rerank.py](./files/graphrag_rerank.py)
+
+The main goal is to:
+- Extract **explicit, verifiable facts** from large PDF contracts and datasheets
+- Store those facts as **structured graph relationships**
+- Answer RFP questions using **YES / NO / PARTIAL** decisions
+- Always provide **document-backed evidence**, never hallucinations
+
+This represents a **strategic shift** from concept-based LLM answers to **compliance-grade validation**.
+
+---
+
+## 🧠 High-Level Architecture
+
+1. **PDF Ingestion**
+    - PDFs are read using OCR-aware loaders
+    - Large documents are split into semantic chunks
+
+2. **Semantic Chunking (LLM-driven)**
+    - Headings, tables, metrics, and sections are normalized
+    - Output is optimized for both vector search and fact extraction
+
+3. **Vector Index (FAISS)**
+    - Chunks are embedded using OCI Cohere multilingual embeddings
+    - Enables semantic recall
+
+4. **Knowledge Graph (Oracle 23ai)**
+    - Explicit facts are extracted as triples:
+        - `REQUIREMENT -[HAS_METRIC]-> RTO`
+        - `REQUIREMENT -[HAS_VALUE]-> 1 hour`
+    - Stored in Oracle Property Graph tables
+
+5. **RFP Requirement Parsing**
+    - Each user question is converted into a structured requirement:
+      ```json
+      {
+        "requirement_type": "NON_FUNCTIONAL",
+        "subject": "authentication",
+        "expected_value": "",
+        "keywords": ["mfa", "ldap", "sso"]
+      }
+      ```
+
+6. **Graph + Vector Fusion**
+    - Graph terms reinforce document reranking
+    - Ensures high-precision evidence retrieval
+
+7. **Deterministic RFP Decision**
+    - LLM outputs are constrained to:
+        - `YES`
+        - `NO`
+        - `PARTIAL`
+    - Always backed by quotes from source documents
+
+---
+
+## 🗂️ Key Code Sections Explained
+
+### Oracle Autonomous & Graph Setup
+- Creates entity and relation tables if not present
+- Builds an Oracle **PROPERTY GRAPH**
+- Uses Oracle Text indexes for semantic filtering
+
+### `create_knowledge_graph()`
+- Uses LLM to extract **ONLY explicit facts**
+- No inference, no assumptions
+- Inserts entities and relations safely using MERGE
+
+### `parse_rfp_requirement()`
+- Converts free-text questions into structured RFP requirements
+- Enforces strict JSON output using `<json>` tags
+- Includes safe fallback logic
+
+### `query_knowledge_graph()`
+- Uses Oracle Text (`CONTAINS`) with sanitized queries
+- Filters graph facts by RFP keywords
+- Returns only relevant evidence
+
+### Graph-aware Re-ranking
+- Combines:
+    - Vector similarity
+    - Graph-derived terms
+- Improves precision on contractual questions
+
+### Final RFP Decision Chain
+- Implemented with LangChain `RunnableMap`
+- Clean separation of:
+    - Requirement parsing
+    - Context retrieval
+    - Decision generation
+
+---
+
+## ✅ Why This Is NOT a Generic RAG
+
+| Traditional RAG | This GraphRAG |
+|----------------|---------------|
+| Answers concepts | Validates requirements |
+| May hallucinate | Evidence-only |
+| Free-form text | Deterministic YES/NO |
+| No structure | Knowledge graph |
+| Chatbot | RFP analyst |
+
+---
+
+## ⚠️ Important Design Principles
+
+- **Evidence-first**: If not explicitly stated → NO
+- **No inference**: LLM is forbidden to assume
+- **Auditability**: Every answer is traceable
+- **Enterprise-grade**: Designed for legal, procurement, compliance
+
+---
+
+## 📌 Intended Use Cases
+
+- RFP response automation
+- Vendor compliance validation
+- Contractual due diligence
+- Pre-sales technical qualification
+- Regulatory checks
+
+---
+
+## 🧪 Demo Disclaimer
+
+This code is:
+- A **demo / reference implementation**
+- Not production-hardened
+- Intended for education, experimentation, and architecture discussions
+
+---
+
+## 👤 Acknowledgments
+
+- **Author** - Cristiano Hoshikawa (Oracle LAD A-Team Solution Engineer)
+
+---
+
+## 📎 References
+
+[Analyze PDF Documents in Natural Language with OCI Generative AI](https://docs.oracle.com/en/learn/oci-genai-pdf)
+
+---
+
+## ⚠️ Disclaimer
+
+This is a demo / reference architecture.  
+Final answers depend strictly on indexed documentation.
+
