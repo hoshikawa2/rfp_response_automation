@@ -195,6 +195,8 @@ This represents a **strategic shift** from concept-based LLM answers to **compli
     - Headings, tables, metrics, and sections are normalized
     - Output is optimized for both vector search and fact extraction
 
+![img.png](img.png)
+
 3. **Vector Index (FAISS)**
     - Chunks are embedded using OCI Cohere multilingual embeddings
     - Enables semantic recall
