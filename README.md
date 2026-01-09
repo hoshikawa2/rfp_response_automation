@@ -370,6 +370,12 @@ Call the http://localhost:8100 in your browser.
 
 ![img_2.png](img_2.png)
 
+There is also a REST Service implemented in the code, so you can automatize a RFP list calling item by item and obtain the responses you want: YES/NO
+
+    curl -X POST http://localhost:8100/chat \
+    -H "Content-Type: application/json" \
+    -d '{"question": "What is the RTO of Oracle Application?"}'
+
 ---
 
 ## ⚠️ Important Design Principles
