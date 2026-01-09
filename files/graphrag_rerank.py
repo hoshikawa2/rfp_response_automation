@@ -132,16 +132,16 @@ def create_tables_if_not_exist(conn):
 create_tables_if_not_exist(oracle_conn)
 ensure_oracle_text_index(
     oracle_conn,
-    "ENTITIES_OCI_1",
+    "ENTITIES_" + GRAPH_NAME,
     "NAME",
-    "IDX_ENT_OCI_1_NAME"
+    "IDX_ENT_" + GRAPH_NAME + "_NAME"
 )
 
 ensure_oracle_text_index(
     oracle_conn,
-    "RELATIONS_OCI_1",
+    "RELATIONS_" + GRAPH_NAME,
     "RELATION_TYPE",
-    "IDX_REL_OCI_1_RELTYPE"
+    "IDX_REL_" + GRAPH_NAME + "_RELTYPE"
 )
 # =========================
 # Global Configurations
