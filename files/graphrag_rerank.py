@@ -39,6 +39,51 @@ atexit.register(lambda: oracle_conn.close())
 # =========================
 # Oracle Graph Client
 # =========================
+def ensure_oracle_text_index(
+        conn,
+        table_name: str,
+        column_name: str,
+        index_name: str
+):
+    """
+    Ensure an Oracle Text (CTXSYS.CONTEXT) index exists and is synchronized
+    for a given table and column.
+    """
+
+    cursor = conn.cursor()
+
+    # 1. Verifica se o índice já existe
+    cursor.execute("""
+                   SELECT COUNT(*)
+                   FROM user_indexes
+                   WHERE index_name = :idx_name
+                   """, {"idx_name": index_name.upper()})
+
+    exists = cursor.fetchone()[0] > 0
+
+    if not exists:
+        print(f"🛠️ Creating Oracle Text index {index_name} on {table_name}.{column_name}")
+
+        cursor.execute(f"""
+            CREATE INDEX {index_name}
+            ON {table_name} ({column_name})
+            INDEXTYPE IS CTXSYS.CONTEXT
+        """)
+
+    else:
+        print(f"✔️ Oracle Text index already exists: {index_name}")
+
+    # 2. Sincroniza o índice (importante se dados já existirem)
+    print(f"🔄 Syncing Oracle Text index: {index_name}")
+    cursor.execute(f"""
+        BEGIN
+            CTX_DDL.SYNC_INDEX('{index_name}');
+        END;
+    """)
+
+    conn.commit()
+    cursor.close()
+
 def create_tables_if_not_exist(conn):
     cursor = conn.cursor()
 
@@ -85,7 +130,19 @@ def create_tables_if_not_exist(conn):
 
 
 create_tables_if_not_exist(oracle_conn)
+ensure_oracle_text_index(
+    oracle_conn,
+    "ENTITIES_OCI_1",
+    "NAME",
+    "IDX_ENT_OCI_1_NAME"
+)
 
+ensure_oracle_text_index(
+    oracle_conn,
+    "RELATIONS_OCI_1",
+    "RELATION_TYPE",
+    "IDX_REL_OCI_1_RELTYPE"
+)
 # =========================
 # Global Configurations
 # =========================
