@@ -69,6 +69,11 @@ REQUIREMENT -[HAS_VALUE]-> < 1 hour
 REQUIREMENT -[SUPPORTED_BY]-> Document section
 ```
 
+There are three types of information:
+- What metric: HAS_METRIC 
+- Value of metric: HAS_VALUE
+- Font of information: SUPPORTED_BY
+
 This ensures:
 - No hallucination
 - No inferred assumptions
