@@ -286,6 +286,91 @@ This represents a **strategic shift** from concept-based LLM answers to **compli
 | Chatbot | RFP analyst |
 
 ---
+## Test the Application
+
+FIrst of all, you need to run the code to prepare the Vector and Graph database. Run this one time only or, if you changed the PDF file with new content, erase the faiss_index folder and change de GRAPH_NAME variable on the code and run it again.
+
+    python graphrag_rerank.py
+
+![img.png](img.png)
+
+![img_1.png](img_1.png)
+
+
+After the execution, the code will chat with you to test. You can give some questions like:
+
+### 🔐 Security & Compliance
+1.	How is data protected both in transit and at rest, considering the service is accessed over the internet?
+2.	Is the SaaS service certified under recognized security standards (ISO 27001, SOC 2, PCI DSS, etc.)?
+3.	Does the solution use a multi-tenant architecture, and how is data isolation between customers ensured?
+4.	How are privileged and administrative accesses managed and controlled?
+5.	Are periodic penetration tests conducted? If so, how frequently?
+6.	Does the platform support strong authentication mechanisms such as MFA and integration with corporate identity providers (LDAP, Active Directory, SSO/IdP)?
+
+⸻
+
+### 🌐 Internet Dependency & Availability
+7.	Does the solution provide any offline capabilities or contingency mechanisms in case of internet unavailability?
+8.	What is the guaranteed service availability SLA and how is it measured?
+9.	How does the system perform under high network latency or unstable connectivity conditions?
+10.	Is geographic redundancy implemented to mitigate regional outages?
+
+⸻
+
+### ⚡ Performance & Scalability
+11.	How is performance maintained during peak usage periods with multiple concurrent customers?
+12.	Are there technical limits on concurrent users, transactions, or data volume?
+13.	Can customers monitor performance and resource consumption metrics in real time?
+14.	Does the platform scale automatically under increased load, or is manual intervention required?
+
+⸻
+
+### 📦 Technical & Contractual Limitations
+15.	Are there defined limits on storage, transactions, API usage, or integrations?
+16.	What happens if contractual limits are exceeded — throttling, additional charges, or service suspension?
+17.	Are there restrictions on customization due to the SaaS delivery model?
+18.	Can on-premises or legacy systems be integrated with the SaaS solution, and what limitations apply?
+
+⸻
+
+### 🔄 Business Continuity, Backup & Recovery
+19.	How frequently are backups performed, and where are they stored?
+20.	What Recovery Time Objective (RTO) and Recovery Point Objective (RPO) are guaranteed in case of a major incident?
+21.	Is granular data restoration supported at the customer level?
+
+⸻
+
+### 🚪 Vendor Lock-in & Data Ownership
+22.	How can customers retrieve their data upon contract termination?
+23.	Is customer data provided in open, documented formats?
+24.	Does the solution rely on proprietary technologies that may complicate future migration?
+
+⸻
+
+### 🧑‍⚖️ Governance, Auditability & Transparency
+25.	Does the platform provide comprehensive audit logs for user and system activities?
+26.	How are security incidents communicated to customers?
+27.	Is there a defined SLA for incident response and resolution?
+
+⸻
+
+You can run a web desginer UI. Just put the [app.py](./files/app.py) on the same folder of your [graphrag_rerank.py](./files/graphrag_rerank.py), create a **templates** folder on the same folder and put the [index.html](./files/index.html) file inside this folder.
+
+```
+root
+ └─► graphrag_rerank.py
+ └─► app.py
+ └─► templates
+     └─► index.html
+```
+
+     python app.py
+
+Call the http://localhost:8100 in your browser.
+
+![img_2.png](img_2.png)
+
+---
 
 ## ⚠️ Important Design Principles
 
