@@ -52,6 +52,14 @@ llm_for_rag = ChatOCIGenAI(
     auth_profile="DEFAULT",
 )
 
+
+embeddings = OCIGenAIEmbeddings(
+    model_id="cohere.embed-multilingual-v3.0",
+    service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
+    compartment_id="ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    auth_profile="DEFAULT",
+)
+
 oracle_conn = oracledb.connect(
     user=USERNAME,
     password=PASSWORD,
@@ -170,13 +178,6 @@ ensure_oracle_text_index(
     "IDX_REL_" + GRAPH_NAME + "_RELTYPE"
 )
 
-embeddings = OCIGenAIEmbeddings(
-    model_id="cohere.embed-multilingual-v3.0",
-    service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
-    compartment_id="ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    auth_profile="DEFAULT",
-)
-
 def create_knowledge_graph(chunks):
     cursor = oracle_conn.cursor()
 
@@ -218,19 +219,19 @@ def create_knowledge_graph(chunks):
 
         prompt = f"""
         You are extracting structured RFP evidence from technical documentation.
-        
+
         Given the text below, identify ONLY explicit, verifiable facts.
-        
+
         Text:
         {text}
-        
+
         Extract triples in ONE of the following formats ONLY:
-        
+
         1. REQUIREMENT -[HAS_SUBJECT]-> <subject>
         2. REQUIREMENT -[HAS_METRIC]-> <metric name>
         3. REQUIREMENT -[HAS_VALUE]-> <exact value or limit>
         4. REQUIREMENT -[SUPPORTED_BY]-> <document section or sentence>
-        
+
         Rules:
         - Use REQUIREMENT as the source entity
         - Use UPPERCASE relation names
@@ -536,6 +537,8 @@ def save_indexed_docs(docs):
 # Main Function
 # =========================
 def chat():
+    pdf_paths = ['RFP - Financial v2.pdf']
+
     already_indexed_docs = load_previously_indexed_docs()
     updated_docs = set()
 
@@ -604,7 +607,7 @@ def chat():
     retriever = vectorstore.as_retriever(search_type="similarity", search_kwargs={"k": 50, "fetch_k": 100})
 
     RFP_DECISION_TEMPLATE = """
-    You are answering an RFP.
+    You are answering an RFP requirement with risk awareness.
     
     Requirement:
     Type: {requirement_type}
@@ -623,6 +626,17 @@ def chat():
     - If value differs, answer PARTIAL
     - If not found, answer NO
     
+    Confidence rules:
+    - HIGH: Explicit evidence directly answers the requirement
+    - MEDIUM: Evidence partially matches or requires light interpretation
+    - LOW: Requirement is ambiguous OR evidence is indirect OR missing
+    
+    Ambiguity rules:
+    - ambiguity_detected = true if:
+      - The requirement can be interpreted in more than one way
+      - Keywords are vague (e.g. "support", "integration", "capability")
+      - Evidence does not clearly bind to subject + expected value
+    
     OUTPUT CONSTRAINTS (MANDATORY):
     - Return ONLY a valid JSON object
     - Do NOT include explanations, comments, markdown, lists, or code fences
@@ -632,6 +646,9 @@ def chat():
     JSON schema (return exactly this structure):
     {{
       "answer": "YES | NO | PARTIAL",
+      "confidence": "HIGH | MEDIUM | LOW",
+      "ambiguity_detected": true,
+      "confidence_reason": "<short reason>",
       "justification": "<short factual explanation>",
       "evidence": [
         {{
@@ -756,7 +773,7 @@ except:
     print("No Faiss")
 
 RFP_DECISION_TEMPLATE = """
-You are answering an RFP.
+You are answering an RFP requirement with risk awareness.
 
 Requirement:
 Type: {requirement_type}
@@ -775,6 +792,17 @@ Decision rules:
 - If value differs, answer PARTIAL
 - If not found, answer NO
 
+Confidence rules:
+- HIGH: Explicit evidence directly answers the requirement
+- MEDIUM: Evidence partially matches or requires light interpretation
+- LOW: Requirement is ambiguous OR evidence is indirect OR missing
+
+Ambiguity rules:
+- ambiguity_detected = true if:
+  - The requirement can be interpreted in more than one way
+  - Keywords are vague (e.g. "support", "integration", "capability")
+  - Evidence does not clearly bind to subject + expected value
+
 OUTPUT CONSTRAINTS (MANDATORY):
 - Return ONLY a valid JSON object
 - Do NOT include explanations, comments, markdown, lists, or code fences
@@ -784,6 +812,9 @@ OUTPUT CONSTRAINTS (MANDATORY):
 JSON schema (return exactly this structure):
 {{
   "answer": "YES | NO | PARTIAL",
+  "confidence": "HIGH | MEDIUM | LOW",
+  "ambiguity_detected": true,
+  "confidence_reason": "<short reason>",
   "justification": "<short factual explanation>",
   "evidence": [
     {{
