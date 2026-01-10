@@ -26,6 +26,32 @@ PASSWORD = "**********"
 os.environ["TNS_ADMIN"] = WALLET_PATH
 GRAPH_NAME = "GRAPH_DB_1"
 
+# =========================
+# Global Configurations
+# =========================
+INDEX_PATH = "./faiss_index"
+PROCESSED_DOCS_FILE = os.path.join(INDEX_PATH, "processed_docs.pkl")
+chapter_separator_regex = r"^(#{1,6} .+|\*\*.+\*\*)$"
+pdf_paths = ['<YOUR_KNOWLEDGE_BASE_FILE>.pdf']
+
+# =========================
+# LLM Definitions
+# =========================
+llm = ChatOCIGenAI(
+    model_id="meta.llama-3.1-405b-instruct",
+    service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
+    compartment_id="ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    auth_profile="DEFAULT",
+    model_kwargs={"temperature": 0.7, "top_p": 0.75, "max_tokens": 4000},
+)
+
+llm_for_rag = ChatOCIGenAI(
+    model_id="meta.llama-3.1-405b-instruct",
+    service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
+    compartment_id="ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    auth_profile="DEFAULT",
+)
+
 oracle_conn = oracledb.connect(
     user=USERNAME,
     password=PASSWORD,
@@ -142,30 +168,6 @@ ensure_oracle_text_index(
     "RELATIONS_" + GRAPH_NAME,
     "RELATION_TYPE",
     "IDX_REL_" + GRAPH_NAME + "_RELTYPE"
-)
-# =========================
-# Global Configurations
-# =========================
-INDEX_PATH = "./faiss_index"
-PROCESSED_DOCS_FILE = os.path.join(INDEX_PATH, "processed_docs.pkl")
-chapter_separator_regex = r"^(#{1,6} .+|\*\*.+\*\*)$"
-
-# =========================
-# LLM Definitions
-# =========================
-llm = ChatOCIGenAI(
-    model_id="meta.llama-3.1-405b-instruct",
-    service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
-    compartment_id="ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    auth_profile="DEFAULT",
-    model_kwargs={"temperature": 0.7, "top_p": 0.75, "max_tokens": 4000},
-)
-
-llm_for_rag = ChatOCIGenAI(
-    model_id="meta.llama-3.1-405b-instruct",
-    service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
-    compartment_id="ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    auth_profile="DEFAULT",
 )
 
 embeddings = OCIGenAIEmbeddings(
@@ -534,8 +536,6 @@ def save_indexed_docs(docs):
 # Main Function
 # =========================
 def chat():
-    pdf_paths = ['FSGIU+OBCS+SD+121125+FINAL.pdf']
-
     already_indexed_docs = load_previously_indexed_docs()
     updated_docs = set()
 
