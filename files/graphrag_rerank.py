@@ -617,16 +617,22 @@ def chat():
     Graph evidence:
     {graph_context}
     
-    Rules:
+    Decision rules:
     - Answer ONLY with YES, NO or PARTIAL
     - Do NOT assume anything not explicitly stated
     - If value differs, answer PARTIAL
     - If not found, answer NO
     
-    Return ONLY valid JSON:
+    OUTPUT CONSTRAINTS (MANDATORY):
+    - Return ONLY a valid JSON object
+    - Do NOT include explanations, comments, markdown, lists, or code fences
+    - Do NOT write any text before or after the JSON
+    - The response must start with an opening curly brace and end with a closing curly brace
+    
+    JSON schema (return exactly this structure):
     {{
       "answer": "YES | NO | PARTIAL",
-      "justification": "<short explanation>",
+      "justification": "<short factual explanation>",
       "evidence": [
         {{
           "quote": "<exact text>",
@@ -763,16 +769,22 @@ Document evidence:
 Graph evidence:
 {graph_context}
 
-Rules:
+Decision rules:
 - Answer ONLY with YES, NO or PARTIAL
 - Do NOT assume anything not explicitly stated
 - If value differs, answer PARTIAL
 - If not found, answer NO
 
-Return ONLY valid JSON:
+OUTPUT CONSTRAINTS (MANDATORY):
+- Return ONLY a valid JSON object
+- Do NOT include explanations, comments, markdown, lists, or code fences
+- Do NOT write any text before or after the JSON
+- The response must start with an opening curly brace and end with a closing curly brace
+
+JSON schema (return exactly this structure):
 {{
   "answer": "YES | NO | PARTIAL",
-  "justification": "<short explanation>",
+  "justification": "<short factual explanation>",
   "evidence": [
     {{
       "quote": "<exact text>",
