@@ -374,7 +374,7 @@ def extract_graph_keywords_from_requirement(req: dict) -> str:
 def build_oracle_text_query(text: str) -> str | None:
     ORACLE_TEXT_STOPWORDS = {
         "and", "or", "the", "with", "between", "of", "to", "for",
-        "in", "on", "by", "is", "are", "was", "were", "be"
+        "in", "on", "by", "is", "are", "was", "were", "be", "within", "between"
     }
 
     tokens = []
