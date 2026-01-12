@@ -42,7 +42,7 @@ llm = ChatOCIGenAI(
     service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
     compartment_id="ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     auth_profile="DEFAULT",
-    model_kwargs={"temperature": 0.7, "top_p": 0.75, "max_tokens": 4000},
+    model_kwargs={"temperature": 0.1, "top_p": 0.75, "max_tokens": 4000},
 )
 
 llm_for_rag = ChatOCIGenAI(
@@ -79,24 +79,22 @@ def ensure_oracle_text_index(
         column_name: str,
         index_name: str
 ):
-    """
-    Ensure an Oracle Text (CTXSYS.CONTEXT) index exists and is synchronized
-    for a given table and column.
-    """
-
     cursor = conn.cursor()
 
-    # 1. Verifica se o índice já existe
+    # 1. Verifica se índice existe e status
     cursor.execute("""
-                   SELECT COUNT(*)
+                   SELECT status
                    FROM user_indexes
-                   WHERE index_name = :idx_name
-                   """, {"idx_name": index_name.upper()})
+                   WHERE index_name = :idx
+                   """, {"idx": index_name.upper()})
 
-    exists = cursor.fetchone()[0] > 0
+    row = cursor.fetchone()
+    index_exists = row is not None
+    index_status = row[0] if row else None
 
-    if not exists:
-        print(f"🛠️ Creating Oracle Text index {index_name} on {table_name}.{column_name}")
+    # 2. Se índice não existe → cria e NÃO sincroniza agora
+    if not index_exists:
+        print(f"🛠️ Creating Oracle Text index {index_name}")
 
         cursor.execute(f"""
             CREATE INDEX {index_name}
@@ -104,18 +102,47 @@ def ensure_oracle_text_index(
             INDEXTYPE IS CTXSYS.CONTEXT
         """)
 
-    else:
-        print(f"✔️ Oracle Text index already exists: {index_name}")
+        conn.commit()
+        cursor.close()
+        print(f"✅ Index {index_name} created (sync deferred)")
+        return
 
-    # 2. Sincroniza o índice (importante se dados já existirem)
+    # 3. Se índice existe mas está inválido → drop + recreate
+    if index_status != "VALID":
+        print(f"⚠️ Index {index_name} is {index_status}. Recreating...")
+
+        try:
+            cursor.execute(f"DROP INDEX {index_name}")
+            conn.commit()
+        except Exception as e:
+            print(f"❌ Failed to drop index {index_name}: {e}")
+            cursor.close()
+            return
+
+        cursor.execute(f"""
+            CREATE INDEX {index_name}
+            ON {table_name} ({column_name})
+            INDEXTYPE IS CTXSYS.CONTEXT
+        """)
+        conn.commit()
+        cursor.close()
+        print(f"♻️ Index {index_name} recreated (sync deferred)")
+        return
+
+    # 4. Índice existe e está VALID → sincroniza com proteção
     print(f"🔄 Syncing Oracle Text index: {index_name}")
-    cursor.execute(f"""
-        BEGIN
-            CTX_DDL.SYNC_INDEX('{index_name}');
-        END;
-    """)
+    try:
+        cursor.execute(f"""
+            BEGIN
+                CTX_DDL.SYNC_INDEX('{index_name}', '2M');
+            END;
+        """)
+        conn.commit()
+        print(f"✅ Index {index_name} synced")
+    except Exception as e:
+        print(f"⚠️ Sync failed for {index_name}: {e}")
+        print("⚠️ Continuing without breaking pipeline")
 
-    conn.commit()
     cursor.close()
 
 def create_tables_if_not_exist(conn):
