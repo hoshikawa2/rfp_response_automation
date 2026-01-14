@@ -3,7 +3,7 @@ import traceback
 import json
 
 # 🔥 IMPORTA SEU PIPELINE
-from oci_genai_llm_graphrag_financial import answer_question
+from graphrag_rerank import answer_question
 
 app = Flask(__name__)
 
