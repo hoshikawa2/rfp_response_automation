@@ -388,42 +388,46 @@ def build_oracle_text_query(text: str) -> str | None:
     tokens = sorted(set(tokens))
     return " OR ".join(tokens) if tokens else None
 
-def query_knowledge_graph(raw_keywords: str):
+def query_knowledge_graph(raw_keywords: str, top_k: int = 20, min_score: int = 50):
     cursor = oracle_conn.cursor()
 
     safe_query = build_oracle_text_query(raw_keywords)
+    if not safe_query:
+        cursor.close()
+        return []
 
-    base_sql = f"""
+    sql = f"""
     SELECT
       e1.NAME AS source_name,
       r.RELATION_TYPE,
-      e2.NAME AS target_name
+      e2.NAME AS target_name,
+      GREATEST(SCORE(1), SCORE(2)) AS relevance_score
     FROM RELATIONS_{GRAPH_NAME} r
     JOIN ENTITIES_{GRAPH_NAME} e1 ON e1.ID = r.SOURCE_ID
     JOIN ENTITIES_{GRAPH_NAME} e2 ON e2.ID = r.TARGET_ID
     WHERE e1.NAME = 'REQUIREMENT'
+      AND (
+        CONTAINS(e2.NAME, '{safe_query}', 1) > 0
+        OR CONTAINS(r.RELATION_TYPE, '{safe_query}', 2) > 0
+      )
+      AND GREATEST(SCORE(1), SCORE(2)) >= {min_score}
+    ORDER BY relevance_score DESC
+    FETCH FIRST {top_k} ROWS ONLY
     """
 
-    if safe_query:
-        base_sql += f"""
-        AND (
-          CONTAINS(e2.NAME, '{safe_query}') > 0
-          OR CONTAINS(r.RELATION_TYPE, '{safe_query}') > 0
-        )
-        """
+    print("🔎 GRAPH QUERY (ranked):")
+    print(sql)
 
-    print("🔎 GRAPH QUERY:")
-    print(base_sql)
-
-    cursor.execute(base_sql)
+    cursor.execute(sql)
     rows = cursor.fetchall()
     cursor.close()
 
-    print("📊 GRAPH FACTS:")
-    for s, r, t in rows:
-        print(f"  REQUIREMENT -[{r}]-> {t}")
+    print(f"📊 GRAPH FACTS (top {top_k}):")
+    for s, r, t, sc in rows:
+        print(f"  [{sc:>3}] REQUIREMENT -[{r}]-> {t}")
 
-    return rows
+    # mantém compatibilidade com o pipeline atual
+    return [(s, r, t) for s, r, t, _ in rows]
 
 # RE-RANK
 
