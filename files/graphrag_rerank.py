@@ -23,7 +23,7 @@ import base64
 WALLET_PATH = "Wallet_oradb23ai"
 DB_ALIAS = "oradb23ai_high"
 USERNAME = "admin"
-PASSWORD = "Moniquinha1972"
+PASSWORD = "**********"
 os.environ["TNS_ADMIN"] = WALLET_PATH
 
 # =========================
