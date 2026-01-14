@@ -7,7 +7,7 @@ from langchain.schema.runnable import RunnableMap
 from langchain_community.document_loaders import UnstructuredPDFLoader, PyMuPDFLoader
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableLambda
-
+from pathlib import Path
 from tqdm import tqdm
 import os
 import pickle
@@ -15,6 +15,7 @@ import re
 import atexit
 import oracledb
 import json
+import base64
 
 # =========================
 # Oracle Autonomous Configuration
@@ -22,9 +23,8 @@ import json
 WALLET_PATH = "Wallet_oradb23ai"
 DB_ALIAS = "oradb23ai_high"
 USERNAME = "admin"
-PASSWORD = "**********"
+PASSWORD = "Moniquinha1972"
 os.environ["TNS_ADMIN"] = WALLET_PATH
-GRAPH_NAME = "GRAPH_DB_1"
 
 # =========================
 # Global Configurations
@@ -32,7 +32,7 @@ GRAPH_NAME = "GRAPH_DB_1"
 INDEX_PATH = "./faiss_index"
 PROCESSED_DOCS_FILE = os.path.join(INDEX_PATH, "processed_docs.pkl")
 chapter_separator_regex = r"^(#{1,6} .+|\*\*.+\*\*)$"
-pdf_paths = ['<YOUR_KNOWLEDGE_BASE_FILE>.pdf']
+GRAPH_NAME = "OCI_GRAPH"
 
 # =========================
 # LLM Definitions
@@ -52,7 +52,6 @@ llm_for_rag = ChatOCIGenAI(
     auth_profile="DEFAULT",
 )
 
-
 embeddings = OCIGenAIEmbeddings(
     model_id="cohere.embed-multilingual-v3.0",
     service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
@@ -70,6 +69,12 @@ oracle_conn = oracledb.connect(
 )
 atexit.register(lambda: oracle_conn.close())
 
+def filename_to_url(filename: str, suffix: str = ".pdf") -> str:
+    if filename.endswith(suffix):
+        filename = filename[: -len(suffix)]
+    decoded = base64.urlsafe_b64decode(filename.encode("ascii"))
+    return decoded.decode("utf-8")
+
 # =========================
 # Oracle Graph Client
 # =========================
@@ -81,7 +86,6 @@ def ensure_oracle_text_index(
 ):
     cursor = conn.cursor()
 
-    # 1. Verifica se índice existe e status
     cursor.execute("""
                    SELECT status
                    FROM user_indexes
@@ -92,7 +96,6 @@ def ensure_oracle_text_index(
     index_exists = row is not None
     index_status = row[0] if row else None
 
-    # 2. Se índice não existe → cria e NÃO sincroniza agora
     if not index_exists:
         print(f"🛠️ Creating Oracle Text index {index_name}")
 
@@ -107,7 +110,6 @@ def ensure_oracle_text_index(
         print(f"✅ Index {index_name} created (sync deferred)")
         return
 
-    # 3. Se índice existe mas está inválido → drop + recreate
     if index_status != "VALID":
         print(f"⚠️ Index {index_name} is {index_status}. Recreating...")
 
@@ -129,7 +131,6 @@ def ensure_oracle_text_index(
         print(f"♻️ Index {index_name} recreated (sync deferred)")
         return
 
-    # 4. Índice existe e está VALID → sincroniza com proteção
     print(f"🔄 Syncing Oracle Text index: {index_name}")
     try:
         cursor.execute(f"""
@@ -191,19 +192,21 @@ def create_tables_if_not_exist(conn):
 
 
 create_tables_if_not_exist(oracle_conn)
-ensure_oracle_text_index(
-    oracle_conn,
-    "ENTITIES_" + GRAPH_NAME,
-    "NAME",
-    "IDX_ENT_" + GRAPH_NAME + "_NAME"
-)
 
-ensure_oracle_text_index(
-    oracle_conn,
-    "RELATIONS_" + GRAPH_NAME,
-    "RELATION_TYPE",
-    "IDX_REL_" + GRAPH_NAME + "_RELTYPE"
-)
+# IF GRAPH INDEX PROBLEM, Reindex
+# ensure_oracle_text_index(
+#     oracle_conn,
+#     "ENTITIES_" + GRAPH_NAME,
+#     "NAME",
+#     "IDX_ENT_" + GRAPH_NAME + "_NAME"
+# )
+#
+# ensure_oracle_text_index(
+#     oracle_conn,
+#     "RELATIONS_" + GRAPH_NAME,
+#     "RELATION_TYPE",
+#     "IDX_REL_" + GRAPH_NAME + "_RELTYPE"
+# )
 
 def create_knowledge_graph(chunks):
     cursor = oracle_conn.cursor()
@@ -317,24 +320,145 @@ def create_knowledge_graph(chunks):
 
 def parse_rfp_requirement(question: str) -> dict:
     prompt = f"""
-You are an RFP requirement extractor.
-
-Return the result STRICTLY between the tags <json> and </json>.
-Do NOT write anything outside these tags.
-
-Question:
-{question}
-
-<json>
-{{
-  "requirement_type": "COMPLIANCE | FUNCTIONAL | NON_FUNCTIONAL",
-  "subject": "<short subject>",
-  "expected_value": "<value or condition if any>",
-  "decision_type": "YES_NO | YES_NO_PARTIAL",
-  "keywords": ["keyword1", "keyword2"]
-}}
-</json>
-"""
+        You are an RFP requirement NORMALIZER for Oracle Cloud Infrastructure (OCI).
+        
+        Your job is NOT to summarize the question.
+        Your job is to STRUCTURE the requirement so it can be searched in:
+        - Technical documentation
+        - Knowledge Graph
+        - Vector databases
+        
+        ────────────────────────────────
+        STEP 1 — Understand the requirement
+        ────────────────────────────────
+        From the question, identify:
+        1. The PRIMARY OCI SERVICE CATEGORY involved
+        2. The MAIN TECHNICAL SUBJECT (short and precise)
+        3. The EXPECTED TECHNICAL CAPABILITY or CONDITION (if any)
+        
+        IMPORTANT:
+        - Ignore marketing language
+        - Ignore phrases like "possui", "permite", "oferece"
+        - Focus ONLY on concrete technical meaning
+        
+        ────────────────────────────────
+        STEP 2 — Mandatory service classification
+        ────────────────────────────────
+        You MUST choose ONE primary technology from the list below
+        and INCLUDE IT EXPLICITLY in the keywords list.
+        
+        Choose the MOST SPECIFIC applicable item.
+        
+        ☁️ OCI SERVICE CATEGORIES (MANDATORY)
+        
+        🖥️ Compute (IaaS)
+        - compute
+        - compute instances
+        - virtual machine
+        - bare metal
+        - gpu
+        - hpc
+        - confidential computing
+        - autoscaling
+        - instance pools
+        - live migration
+        - ocvs (vmware)
+        - arm compute
+        
+        💾 Storage
+        - object storage
+        - archive storage
+        - block volume
+        - boot volume
+        - file storage
+        - volume groups
+        - snapshots
+        - replication
+        
+        🌐 Networking
+        - vcn
+        - load balancer
+        - network load balancer
+        - dns
+        - fastconnect
+        - drg
+        - firewall
+        - waf
+        - bastion
+        - vtap
+        - private endpoint
+        
+        🔐 Security & Identity
+        - iam
+        - compartments
+        - policies
+        - oci vault
+        - key management
+        - certificates
+        - secrets
+        - cloud guard
+        - security zones
+        - vulnerability scanning
+        - data safe
+        - audit
+        - logging
+        - shielded instances
+        
+        📦 Containers & Cloud Native
+        - oke
+        - kubernetes
+        - container registry
+        - api gateway
+        - functions
+        - streaming
+        - events
+        - service mesh
+        
+        🗄️ Databases
+        - autonomous database
+        - adw
+        - atp
+        - base database
+        - exadata
+        - mysql
+        - nosql
+        
+        📊 Analytics & AI
+        - analytics cloud
+        - data science
+        - data catalog
+        - big data service
+        - generative ai
+        - ai services
+        
+        ────────────────────────────────
+        STEP 3 — Keywords rules (CRITICAL)
+        ────────────────────────────────
+        The "keywords" field MUST:
+        - ALWAYS include at least ONE OCI service keyword (e.g. "compute", "object storage", "oke")
+        - Include technical capability terms (e.g. resize, autoscaling, encryption)
+        - NEVER include generic verbs (permitir, possuir, oferecer)
+        - NEVER include full sentences
+        
+        ────────────────────────────────
+        STEP 4 — Output rules
+        ────────────────────────────────
+        Return ONLY valid JSON between <json> tags.
+        Do NOT explain your reasoning.
+        
+        Question:
+        {question}
+        
+        <json>
+        {{
+          "requirement_type": "COMPLIANCE | FUNCTIONAL | NON_FUNCTIONAL",
+          "subject": "<short technical subject, e.g. 'Compute Instances'>",
+          "expected_value": "<technical capability or condition, or empty string>",
+          "decision_type": "YES_NO | YES_NO_PARTIAL",
+          "keywords": ["mandatory_oci_service", "technical_capability", "additional_term"]
+        }}
+        </json>
+        """
 
     resp = llm_for_rag.invoke(prompt)
     raw = resp.content.strip()
@@ -498,7 +622,8 @@ def semantic_chunking(text):
     2. Separate paragraphs by heading
     3. Indicate columns with [COLUMN 1], [COLUMN 2] if present
     4. Indicate tables with [TABLE] in markdown format
-    5. Indicate explicity metrics (if it exists)
+    5. ALWAYS PUT THE URL if there is a Reference
+    6. Indicate explicity metrics (if it exists)
        Examples:
          - Oracle Financial Services RTO is 1 hour
          - The Oracle Banking Supply Chain Finance Cloud Service A maximum number of 10K Hosted Transactions
@@ -514,7 +639,6 @@ def semantic_chunking(text):
             print("[ERROR] Gen AI call error")
 
     return response
-
 
 def read_pdfs(pdf_path):
     if "-ocr" in pdf_path:
@@ -568,7 +692,11 @@ def save_indexed_docs(docs):
 # Main Function
 # =========================
 def chat():
-    pdf_paths = ['RFP - Financial v2.pdf']
+    PDF_FOLDER = Path("docs")  # pasta onde estão os PDFs
+
+    pdf_paths = sorted(
+        str(p) for p in PDF_FOLDER.glob("*.pdf")
+    )
 
     already_indexed_docs = load_previously_indexed_docs()
     updated_docs = set()
@@ -588,6 +716,7 @@ def chat():
             print(f"✅ Document already indexed: {pdf_path}")
             continue
         full_text = read_pdfs(pdf_path=pdf_path)
+        path_url = filename_to_url(os.path.basename(pdf_path))
 
         text_chunks = smart_split_text(full_text, max_chunk_size=10_000)
         overflow_buffer = ""
@@ -610,7 +739,9 @@ def chat():
                     overflow_buffer = ""
 
                 for chapter_text in chapters:
-                    doc = Document(page_content=chapter_text, metadata={"source": pdf_path})
+                    reference_url = "Reference: " + path_url
+                    chapter_text = chapter_text + "\n" + reference_url
+                    doc = Document(page_content=chapter_text, metadata={"source": pdf_path, "reference": reference_url})
                     new_chunks.append(doc)
                     print(f"✅ New chapter indexed:\n{chapter_text}...\n")
 
@@ -653,9 +784,14 @@ def chat():
     
     Decision rules:
     - Answer ONLY with YES, NO or PARTIAL
-    - Do NOT assume anything not explicitly stated
     - If value differs, answer PARTIAL
     - If not found, answer NO
+
+    Interpretation rules (MANDATORY):
+    - If a capability is supported but requires reboot, downtime, or restart, it STILL counts as YES unless the requirement explicitly forbids it.
+    - "Servidor em funcionamento" means the resource exists and is active before the operation, not that it must remain online without interruption.
+    - Only answer NO if the operation is NOT supported at all or requires destroying and recreating the resource.
+    - Reboot, restart, or brief unavailability MUST NOT be interpreted as lack of support.
     
     Confidence rules:
     - HIGH: Explicit evidence directly answers the requirement
@@ -671,7 +807,7 @@ def chat():
     Service scope rules (MANDATORY):
     - Evidence is valid ONLY if it refers to the SAME service category as the requirement.
     - Do NOT use evidence from a different Oracle Cloud service to justify another.
-    
+
     OUTPUT CONSTRAINTS (MANDATORY):
     - Return ONLY a valid JSON object
     - Do NOT include explanations, comments, markdown, lists, or code fences
@@ -694,22 +830,6 @@ def chat():
     }}
     """
     prompt = PromptTemplate.from_template(RFP_DECISION_TEMPLATE)
-
-    def get_context(x):
-        query = x.get("input") if isinstance(x, dict) else x
-
-        # 1. Recupera chunks vetoriais normalmente
-        docs = retriever.invoke(query)
-
-        req = parse_rfp_requirement(query)
-        query_terms = extract_graph_keywords_from_requirement(req)
-        graph_context = query_knowledge_graph(query_terms)
-
-        graph_terms = extract_terms_from_graph_text(graph_context)
-
-        reranked_chunks = rerank_documents_with_graph_terms(docs, query, graph_terms)
-
-        return "\n\n".join(reranked_chunks)
 
     def get_context_from_requirement(req: dict):
         query_terms = extract_graph_keywords_from_requirement(req)
@@ -756,21 +876,6 @@ def chat():
         print("\n📜 RESPONSE:\n")
         print(response)
         print("\n" + "=" * 80 + "\n")
-
-def get_context(x):
-    query = x.get("input") if isinstance(x, dict) else x
-
-    docs = retriever.invoke(query)
-
-    req = parse_rfp_requirement(query)
-    query_terms = extract_graph_keywords_from_requirement(req)
-    graph_context = query_knowledge_graph(query_terms)
-
-    graph_terms = extract_terms_from_graph_text(graph_context)
-
-    reranked_chunks = rerank_documents_with_graph_terms(docs, query, graph_terms)
-
-    return "\n\n".join(reranked_chunks)
 
 def get_context_from_requirement(req: dict):
     query_terms = extract_graph_keywords_from_requirement(req)
@@ -823,9 +928,14 @@ Graph evidence:
 
 Decision rules:
 - Answer ONLY with YES, NO or PARTIAL
-- Do NOT assume anything not explicitly stated
 - If value differs, answer PARTIAL
 - If not found, answer NO
+
+Interpretation rules (MANDATORY):
+- If a capability is supported but requires reboot, downtime, or restart, it STILL counts as YES unless the requirement explicitly forbids it.
+- "Servidor em funcionamento" means the resource exists and is active before the operation, not that it must remain online without interruption.
+- Only answer NO if the operation is NOT supported at all or requires destroying and recreating the resource.
+- Reboot, restart, or brief unavailability MUST NOT be interpreted as lack of support.
 
 Confidence rules:
 - HIGH: Explicit evidence directly answers the requirement
@@ -841,6 +951,10 @@ Ambiguity rules:
 Service scope rules (MANDATORY):
 - Evidence is valid ONLY if it refers to the SAME service category as the requirement.
 - Do NOT use evidence from a different Oracle Cloud service to justify another.
+- PaaS services (e.g. Autonomous Database) MUST NOT be used as evidence for IaaS/Compute requirements.
+- If the requirement is under Compute/IaaS, evidence MUST explicitly mention Compute, IaaS, VM, Bare Metal, or equivalent infrastructure services.
+- Cross-service inference (vendor-level capability applied to another service) is strictly forbidden.
+- Get all URL references or sources as evidences
 
 OUTPUT CONSTRAINTS (MANDATORY):
 - Return ONLY a valid JSON object
