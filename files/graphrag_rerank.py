@@ -805,7 +805,6 @@ def chat():
       - Evidence does not clearly bind to subject + expected value
     
     Service scope rules (MANDATORY):
-    - Evidence is valid ONLY if it refers to the SAME service category as the requirement.
     - Do NOT use evidence from a different Oracle Cloud service to justify another.
 
     OUTPUT CONSTRAINTS (MANDATORY):
@@ -949,12 +948,7 @@ Ambiguity rules:
   - Evidence does not clearly bind to subject + expected value
 
 Service scope rules (MANDATORY):
-- Evidence is valid ONLY if it refers to the SAME service category as the requirement.
 - Do NOT use evidence from a different Oracle Cloud service to justify another.
-- PaaS services (e.g. Autonomous Database) MUST NOT be used as evidence for IaaS/Compute requirements.
-- If the requirement is under Compute/IaaS, evidence MUST explicitly mention Compute, IaaS, VM, Bare Metal, or equivalent infrastructure services.
-- Cross-service inference (vendor-level capability applied to another service) is strictly forbidden.
-- Get all URL references or sources as evidences
 
 OUTPUT CONSTRAINTS (MANDATORY):
 - Return ONLY a valid JSON object
