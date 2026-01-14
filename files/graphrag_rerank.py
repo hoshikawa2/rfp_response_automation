@@ -42,7 +42,7 @@ llm = ChatOCIGenAI(
     service_endpoint="https://inference.generativeai.us-chicago-1.oci.oraclecloud.com",
     compartment_id="ocid1.compartment.oc1..aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     auth_profile="DEFAULT",
-    model_kwargs={"temperature": 0.1, "top_p": 0.75, "max_tokens": 4000},
+    model_kwargs={"temperature": 0, "top_p": 1, "max_tokens": 4000},
 )
 
 llm_for_rag = ChatOCIGenAI(
@@ -348,89 +348,190 @@ def parse_rfp_requirement(question: str) -> dict:
         and INCLUDE IT EXPLICITLY in the keywords list.
         
         Choose the MOST SPECIFIC applicable item.
-        
-        ☁️ OCI SERVICE CATEGORIES (MANDATORY)
-        
-        🖥️ Compute (IaaS)
-        - compute
-        - compute instances
-        - virtual machine
-        - bare metal
-        - gpu
-        - hpc
-        - confidential computing
-        - autoscaling
-        - instance pools
-        - live migration
-        - ocvs (vmware)
-        - arm compute
-        
-        💾 Storage
-        - object storage
-        - archive storage
-        - block volume
-        - boot volume
-        - file storage
-        - volume groups
-        - snapshots
-        - replication
-        
-        🌐 Networking
-        - vcn
-        - load balancer
-        - network load balancer
-        - dns
-        - fastconnect
-        - drg
-        - firewall
-        - waf
-        - bastion
-        - vtap
-        - private endpoint
-        
-        🔐 Security & Identity
-        - iam
-        - compartments
-        - policies
-        - oci vault
-        - key management
-        - certificates
-        - secrets
-        - cloud guard
-        - security zones
-        - vulnerability scanning
-        - data safe
-        - audit
-        - logging
-        - shielded instances
-        
-        📦 Containers & Cloud Native
-        - oke
-        - kubernetes
-        - container registry
-        - api gateway
-        - functions
-        - streaming
-        - events
-        - service mesh
-        
-        🗄️ Databases
-        - autonomous database
-        - adw
-        - atp
-        - base database
-        - exadata
-        - mysql
-        - nosql
-        
-        📊 Analytics & AI
-        - analytics cloud
-        - data science
-        - data catalog
-        - big data service
-        - generative ai
-        - ai services
-        
+                
+        Serviços da Oracle Cloud Infrastructure (OCI):        
+
+            Compute (IaaS)
+                •   Compute Instances (VM)
+                •   Bare Metal Instances
+                •   Dedicated VM Hosts
+                •   GPU Instances
+                •   Confidential Computing
+                •   Capacity Reservations
+                •   Autoscaling (Instance Pools)
+                •   Live Migration
+                •   Oracle Cloud VMware Solution (OCVS)
+                •   HPC (High Performance Computing)
+                •   Arm-based Compute (Ampere)
+            
+            Storage
+            
+                Object Storage
+                •   Object Storage
+                •   Object Storage – Archive
+                •   Pre-Authenticated Requests
+                •   Replication
+            
+                Block & File
+                •   Block Volume
+                •   Boot Volume
+                •   Volume Groups
+                •   File Storage
+                •   File Storage Snapshots
+                •   Data Transfer Service
+            
+            Networking
+                •   Virtual Cloud Network (VCN)
+                •   Subnets
+                •   Internet Gateway
+                •   NAT Gateway
+                •   Service Gateway
+                •   Dynamic Routing Gateway (DRG)
+                •   FastConnect
+                •   Load Balancer (L7 / L4)
+                •   Network Load Balancer
+                •   DNS
+                •   Traffic Management Steering Policies
+                •   IP Address Management (IPAM)
+                •   Network Firewall
+                •   Web Application Firewall (WAF)
+                •   Bastion
+                •   Capture Traffic (VTAP)
+                •   Private Endpoints
+            
+            Security, Identity & Compliance
+                •   Identity and Access Management (IAM)
+                •   Compartments
+                •   Policies
+                •   OCI Vault
+                •   OCI Key Management (KMS)
+                •   OCI Certificates
+                •   OCI Secrets
+                •   OCI Bastion
+                •   Cloud Guard
+                •   Security Zones
+                •   Vulnerability Scanning Service
+                •   Data Safe
+                •   Logging
+                •   Audit
+                •   OS Management / OS Management Hub
+                •   Shielded Instances
+                •   Zero Trust Packet Routing
+            
+            Databases
+            
+                Autonomous
+                    •   Autonomous Database (ATP)
+                    •   Autonomous Data Warehouse (ADW)
+                    •   Autonomous JSON Database
+                
+                Databases Gerenciados
+                    •   Oracle Database Service
+                    •   Oracle Exadata Database Service
+                    •   Exadata Cloud@Customer
+                    •   Base Database Service
+                    •   MySQL Database Service
+                    •   MySQL HeatWave
+                    •   NoSQL Database Cloud Service
+                    •   TimesTen
+                    •   PostgreSQL (OCI managed)
+                    •   MongoDB API (OCI NoSQL compatibility)
+                
+            Analytics & BI
+                •   Oracle Analytics Cloud (OAC)
+                •   OCI Data Catalog
+                •   OCI Data Integration
+                •   OCI Streaming Analytics
+                •   OCI GoldenGate
+                •   OCI Big Data Service (Hadoop/Spark)
+                •   OCI Data Science
+                •   OCI AI Anomaly Detection
+                •   OCI AI Forecasting
+            
+            AI & Machine Learning
+            
+                Generative AI
+                •   OCI Generative AI
+                •   OCI Generative AI Agents
+                •   OCI Generative AI RAG
+                •   OCI Generative AI Embeddings
+                •   OCI AI Gateway (OpenAI-compatible)
+            
+            AI Services
+                •   OCI Vision (OCR, image analysis)
+                •   OCI Speech (STT / TTS)
+                •   OCI Language (NLP)
+                •   OCI Document Understanding
+                •   OCI Anomaly Detection
+                •   OCI Forecasting
+                •   OCI Data Labeling
+            
+            Containers & Cloud Native
+                •   OCI Container Engine for Kubernetes (OKE)
+                •   Container Registry (OCIR)
+                •   Service Mesh
+                •   API Gateway
+                •   OCI Functions (FaaS)
+                •   OCI Streaming (Kafka-compatible)
+                •   OCI Queue
+                •   OCI Events
+                •   OCI Resource Manager (Terraform)
+            
+            Integration & Messaging
+                •   OCI Integration Cloud (OIC)
+                •   OCI Service Connector Hub
+                •   OCI Streaming
+                •   OCI GoldenGate
+                •   OCI API Gateway
+                •   OCI Events Service
+                •   OCI Queue
+                •   Real Applications Clusters (RAC)
+            
+            Developer Services
+                •   OCI DevOps (CI/CD)
+                •   OCI Code Repository
+                •   OCI Build Pipelines
+                •   OCI Artifact Registry
+                •   OCI Logging Analytics
+                •   OCI Monitoring
+                •   OCI Notifications
+                •   OCI Bastion
+                •   OCI CLI
+                •   OCI SDKs
+            
+            Observability & Management
+                •   OCI Monitoring
+                •   OCI Alarms
+                •   OCI Logging
+                •   OCI Logging Analytics
+                •   OCI Application Performance Monitoring (APM)
+                •   OCI Operations Insights
+                •   OCI Management Agent
+                •   OCI Resource Discovery
+            
+            Enterprise & Hybrid
+                •   Oracle Cloud@Customer
+                •   Exadata Cloud@Customer
+                •   Compute Cloud@Customer
+                •   Dedicated Region Cloud@Customer
+                •   OCI Roving Edge Infrastructure
+                •   OCI Alloy
+            
+            Governance & FinOps
+                •   OCI Budgets
+                •   Cost Analysis
+                •   Usage Reports
+                •   Quotas
+                •   Tagging
+                •   Compartments
+                •   Resource Search
+            
+            Regions & Edge
+                •   OCI Regions (Commercial, Government, EU Sovereign)
+                •   OCI Edge Services
+                •   OCI Roving Edge
+                •   OCI Dedicated Region
+
         ────────────────────────────────
         STEP 3 — Keywords rules (CRITICAL)
         ────────────────────────────────
@@ -459,7 +560,7 @@ def parse_rfp_requirement(question: str) -> dict:
         }}
         </json>
         """
-
+        
     resp = llm_for_rag.invoke(prompt)
     raw = resp.content.strip()
 
