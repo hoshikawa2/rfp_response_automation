@@ -2,91 +2,290 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GraphRAG Chat</title>
-    <style>
-        body {
-            background: linear-gradient(to bottom right, #0f172a, #1e293b);
-            min-height: 100vh;
-            color: #e2e8f0;
-        }
-        pre { white-space: pre-wrap; }
-    </style>
+    <title>Oracle AI RFP Response</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: #0f172a;
+            background: linear-gradient(to bottom right, #0f172a, #1e293b);
+            min-height: 100vh;
             color: #e5e7eb;
-            padding: 30px;
+            padding: 40px;
         }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #e2e8f0;
+        }
+
+        h2 {
+            color: #93c5fd;
+            margin-top: 0;
+        }
+
+        h3 {
+            color: #bfdbfe;
+            margin-bottom: 6px;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 1600px;
+            margin: 0 auto 40px auto;
+            background: rgba(15, 23, 42, 0.75);
+            padding: 32px 40px;
+            border-radius: 18px;
+            border: 1px solid #334155;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+        }
+
+        .small {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .highlight {
+            color: #93c5fd;
+            font-weight: bold;
+        }
+
         textarea {
             width: 100%;
-            height: 80px;
+            height: 110px;
             font-size: 16px;
+            padding: 14px;
+            border-radius: 8px;
+            border: none;
+            margin-top: 12px;
         }
+
         button {
-            margin-top: 10px;
-            padding: 10px 20px;
+            margin-top: 14px;
+            padding: 12px 26px;
             font-size: 16px;
+            cursor: pointer;
+            border-radius: 8px;
+            border: none;
+            background: #2563eb;
+            color: white;
         }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
         pre {
             background: #020617;
-            padding: 20px;
+            padding: 22px;
             white-space: pre-wrap;
-            border-radius: 8px;
+            border-radius: 10px;
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        code {
+            display: block;
+            background: #020617;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            margin-top: 10px;
+            color: #e5e7eb;
+        }
+
+        ul {
+            padding-left: 18px;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid #334155;
+            margin: 28px 0;
         }
     </style>
 </head>
 <body>
 
-<h1>🧠 Oracle GraphRAG Chat</h1>
+<h1>🧠 Oracle AI RFP Response</h1>
 
-<div class="mt-12 mb-8 text-center">
-    <div class="inline-block bg-slate-800/40 px-6 py-4 rounded-2xl shadow-lg border border-slate-700">
+<!-- ================= INTRODUCTION ================= -->
+<div class="card">
 
-        <p class="text-slate-400 text-sm">
-            Oracle LAD A-Team<br/>
-            <span class="text-blue-300 font-semibold">Cristiano Hoshikawa</span><br/>
-            <span class="text-blue-300 font-semibold">cristiano.hoshikawa@oracle.com</span>
-        </p>
+    <p class="small">
+        Oracle LAD A-Team<br/>
+        <span class="highlight">Cristiano Hoshikawa</span><br/>
+        <span class="highlight">cristiano.hoshikawa@oracle.com</span>
+    </p>
 
-        <p class="text-slate-500 text-xs mt-1 italic">
-            <span class="text-blue-300 font-semibold">Tutorial in: https://docs.oracle.com/en/learn/oci-genai-pdf</span><br/>
-        </p>
+    <p class="small">
+        Tutorial:
+        <span class="highlight">https://docs.oracle.com/en/learn/oci-genai-pdf</span><br/>
+        REST Service Endpoint:
+        <span class="highlight">http://demo-orcl-api-ai.hoshikawa.com.br:8101/chat</span>
+    </p>
 
-        <p class="text-slate-500 text-xs mt-1 italic">
-            GraphRAG • Oracle 23ai • Embeddings • LLM • Flask API
-        </p>
+    <hr/>
 
-        <div class="mt-2 text-slate-500 text-xs flex items-center justify-center gap-1">
-            <span>Demo Version</span>
-        </div>
+    <h2>Overview</h2>
 
-    </div>
+    <p class="small">
+        This application provides an <strong>AI-assisted RFP response engine</strong> for
+        Oracle Cloud Infrastructure (OCI).
+        It analyzes natural language requirements and returns a
+        <strong>structured, evidence-based technical response</strong>.
+    </p>
+
+    <ul class="small">
+        <li>Official Oracle technical documentation</li>
+        <li>Semantic search using vector embeddings</li>
+        <li>Knowledge Graph signals</li>
+        <li>Large Language Models (LLMs)</li>
+    </ul>
+
 </div>
 
-<textarea id="question" placeholder="Ask a question..."></textarea>
-<br>
-<button onclick="send()">Ask</button>
+<!-- ================= TEST AREA ================= -->
+<div class="card">
 
-<h2>Answer</h2>
-<pre id="answer"></pre>
+    <h2>Try It — Live RFP Question</h2>
+
+    <p class="small">
+        Enter an RFP requirement or technical question below.
+        The API will return a structured JSON response.
+    </p>
+
+    <textarea id="question" placeholder="Example: Does OCI Compute support Real Application Clusters (RAC)?"></textarea>
+    <button onclick="send()">Submit Question</button>
+
+    <h3>AI Response</h3>
+    <pre id="answer"></pre>
+
+</div>
+
+<!-- ================= REST API DOC ================= -->
+<div class="card">
+
+    <h2>REST API Usage</h2>
+
+    <p class="small">
+        The service exposes a <strong>POST</strong> endpoint that accepts a JSON payload.
+    </p>
+
+    <code>
+        curl -X POST http://demo-orcl-api-ai.hoshikawa.com.br:8101/chat \
+        -H "Content-Type: application/json" \
+        -d '{
+        "question": "Does Oracle Cloud Infrastructure (OCI) Compute support online resizing of memory for running virtual machine instances?"
+        }'
+    </code>
+
+    <h3>Request Parameters</h3>
+
+    <p class="small">
+        <strong>question</strong> (string)<br/>
+        Natural language description of an RFP requirement or technical capability.
+        Small wording changes may affect how intent and evidence are interpreted.
+    </p>
+
+</div>
+
+<!-- ================= JSON EXPLANATION ================= -->
+<div class="card">
+
+    <h2>AI Response JSON Structure</h2>
+
+    <p class="small">
+        The API always returns a <strong>strict and normalized JSON structure</strong>,
+        designed for traceability, auditing, and human validation.
+    </p>
+
+    <h3>answer</h3>
+    <p class="small">
+        Final assessment of the requirement:
+        <strong>YES</strong>, <strong>NO</strong>, or <strong>PARTIAL</strong>.
+        A <strong>NO</strong> means the requirement is not explicitly satisfied as written.
+    </p>
+
+    <h3>confidence</h3>
+    <p class="small">
+        Indicates the strength of the supporting evidence:
+        HIGH, MEDIUM, or LOW.
+    </p>
+
+    <h3>ambiguity_detected</h3>
+    <p class="small">
+        Flags whether the requirement is vague, overloaded, or open to interpretation.
+    </p>
+
+    <h3>confidence_reason</h3>
+    <p class="small">
+        Short explanation justifying the confidence level.
+    </p>
+
+    <h3>justification</h3>
+    <p class="small">
+        Technical rationale connecting the evidence to the requirement.
+        This is not marketing text.
+    </p>
+
+    <h3>evidence</h3>
+    <p class="small">
+        List of supporting references:
+    </p>
+    <ul class="small">
+        <li><strong>quote</strong> – Exact extracted text</li>
+        <li><strong>source</strong> – URL or document reference</li>
+    </ul>
+
+</div>
+
+<!-- ================= DISCLAIMERS ================= -->
+<div class="card">
+
+    <h2>Important Notes</h2>
+
+    <ul class="small">
+        <li>
+            Responses are generated by an <strong>LLM</strong>.
+            Even with low temperature, minor variations may occur across executions.
+        </li>
+        <li>
+            Results depend on wording, terminology, and framing of the requirement.
+        </li>
+        <li>
+            In many RFPs, an initial <strong>NO</strong> can be reframed into a valid
+            <strong>YES</strong> by mapping the requirement to the correct OCI service.
+        </li>
+        <li>
+            <strong>Human review is mandatory.</strong>
+            This tool supports architects and RFP teams — it does not replace them.
+        </li>
+    </ul>
+
+    <p class="small">
+        GraphRAG • Oracle Autonomous Database 23ai • Embeddings • Knowledge Graph • LLM • Flask API
+    </p>
+
+</div>
 
 <script>
     async function send() {
         const question = document.getElementById("question").value;
         const answerBox = document.getElementById("answer");
 
-        answerBox.textContent = "⏳ Thinking...";
+        answerBox.textContent = "⏳ Processing request...";
 
         const res = await fetch("/chat", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({question})
+            body: JSON.stringify({ question })
         });
 
         const data = await res.json();
 
-        if (data.result && data.result.answer) {
+        if (data.result) {
             answerBox.textContent = JSON.stringify(data.result, null, 2);
         } else {
             answerBox.textContent = "❌ Error: " + JSON.stringify(data);
